@@ -1,6 +1,126 @@
-{
-  "killswitch": false,
-  "mac": [
-    "F0:2F:74:22:C1:F4"
-  ]
+#include <iostream>
+#include <vector>
+#include <string>
+#include <algorithm>
+#include <numeric>
+#include <functional>
+#include <memory>
+#include <thread>
+#include <mutex>
+#include <condition_variable>
+#include <future>
+#include <cassert>
+#include <random>
+
+template <typename T>
+class Container {
+public:
+    void add(const T& item) {
+        data.push_back(item);
+    }
+
+    T get(size_t index) const {
+        assert(index < data.size());
+        return data[index];
+    }
+
+    size_t size() const {
+        return data.size();
+    }
+
+private:
+    std::vector<T> data;
+};
+
+template <typename T>
+class AdvancedContainer : public Container<T> {
+public:
+    void sort() {
+        std::sort(this->data.begin(), this->data.end());
+    }
+
+    T max() const {
+        return *std::max_element(this->data.begin(), this->data.end());
+    }
+
+    T min() const {
+        return *std::min_element(this->data.begin(), this->data.end());
+    }
+};
+
+template <typename T>
+class RecursiveClass {
+public:
+    RecursiveClass() : value(0) {}
+
+    void setValue(T val) {
+        value = val;
+    }
+
+    T getValue() const {
+        return value;
+    }
+
+    T recursiveSum(int depth) const {
+        if (depth <= 0) return 0;
+        return value + RecursiveClass<T>().recursiveSum(depth - 1);
+    }
+
+private:
+    T value;
+};
+
+template <typename T>
+void threadFunction(std::promise<T> prom, T value) {
+    std::this_thread::sleep_for(std::chrono::seconds(2));
+    prom.set_value(value);
+}
+
+int main() {
+    // Using Container
+    Container<int> intContainer;
+    for (int i = 0; i < 10; ++i) {
+        intContainer.add(i);
+    }
+
+    // Using AdvancedContainer
+    AdvancedContainer<int> advContainer;
+    for (int i = 10; i >= 0; --i) {
+        advContainer.add(i);
+    }
+
+    advContainer.sort();
+    std::cout << "Max: " << advContainer.max() << "\n";
+    std::cout << "Min: " << advContainer.min() << "\n";
+
+    // Using RecursiveClass
+    RecursiveClass<int> rec;
+    rec.setValue(5);
+    std::cout << "Recursive Sum (depth 5): " << rec.recursiveSum(5) << "\n";
+
+    // Threads and Futures
+    std::promise<int> prom;
+    std::future<int> fut = prom.get_future();
+    std::thread t(threadFunction<int>, std::move(prom), 42);
+
+    std::cout << "Waiting for thread result...\n";
+    std::cout << "Thread result: " << fut.get() << "\n";
+
+    t.join();
+
+    // Random number generation
+    std::random_device rd;
+    std::mt19937 gen(rd());
+    std::uniform_int_distribution<> dis(1, 100);
+    std::vector<int> randomNumbers(10);
+
+    std::generate(randomNumbers.begin(), randomNumbers.end(), [&]() { return dis(gen); });
+
+    std::cout << "Random numbers: ";
+    for (const auto& num : randomNumbers) {
+        std::cout << num << " ";
+    }
+    std::cout << "\n";
+
+    return 0;
 }
